@@ -200,8 +200,14 @@ GitHub:
 1. ไปที่ github.com → New repository → ตั้งชื่อ → Create
 2. copy repo URL มาให้
 
-Vercel CLI login (ถ้ายังไม่เคย):
+GitHub CLI login (ถ้ายังไม่เคย):
 3. รันคำสั่งนี้บน terminal:
+   gh auth login
+   (เลือก GitHub.com → HTTPS → Login with a web browser)
+   ใช้สำหรับ: create/label/comment/close issues และ open PRs
+
+Vercel CLI login (ถ้ายังไม่เคย):
+4. รันคำสั่งนี้บน terminal:
    npm install -g vercel
    vercel login
    (เลือก login ด้วย GitHub / Email ตามต้องการ)
@@ -631,10 +637,105 @@ Output format:
 
 ---
 
+### After Plan Approved — Create Issues on GitHub
+
+> **เมื่อ Plan Reviewer บอก APPROVED — ต้องสร้าง issues บน GitHub ทันที ด้วย `gh` CLI**
+> ห้ามแค่บันทึก plan.md แล้วหยุด — issues ต้องอยู่บน GitHub เพื่อให้ Orchestrator track ได้
+
+```bash
+# 1. ตรวจว่า gh auth ผ่านแล้ว
+gh auth status
+
+# 2. สร้าง labels (ถ้ายังไม่มี — ดู GitHub Issue Management section)
+
+# 3. สร้างทุก issue จาก plan — ตัวอย่าง:
+gh issue create \
+  --title "#1: Next.js scaffold + project structure" \
+  --body "$(cat docs/superpowers/plans/issues/issue-01.md)" \
+  --label "V0,status: open"
+
+# ทำซ้ำทุก issue ใน plan
+# ลำดับ: V0 issues (#1-#3) ก่อน, แล้ว M0 (#4+)
+
+# 4. ตรวจว่า issues ขึ้นครบ
+gh issue list --state open
+```
+
+**ห้ามข้ามขั้นตอนนี้** — ถ้าไม่มี issues บน GitHub, Orchestrator จะไม่มี queue ให้ track
+
+---
+
 ## PHASE B: EXECUTE (Subagent-Driven Development)
 
 > **REQUIRED SKILL:** ใช้ `superpowers:subagent-driven-development` ในขั้นตอนนี้
 > Fresh subagent ต่อ 1 issue + two-stage review (spec compliance → code quality) ทุกอัน
+
+### GitHub Issue Management — `gh` CLI Commands
+
+> Orchestrator ต้องใช้ `gh` CLI ทุกครั้งที่ต้องการ create/update/close issue
+> **ห้ามอธิบายว่า "ควรจะ update issue" — ต้องรัน `gh` command จริงๆ เสมอ**
+
+```bash
+# --- SETUP (ครั้งเดียว ต้องทำก่อน Phase B) ---
+gh auth login                              # login ด้วย GitHub account
+
+# --- สร้าง Labels ที่ใช้ใน pipeline ---
+gh label create "status: open"      --color 0075ca
+gh label create "status: in-progress" --color fbca04
+gh label create "status: done"      --color 0e8a16
+gh label create "status: blocked"   --color e4e669
+gh label create "status: failed"    --color d93f0b
+gh label create "qa-passed"         --color 0e8a16
+gh label create "qa-failed"         --color d93f0b
+gh label create "V0" --color 5319e7
+gh label create "M0" --color 1d76db
+gh label create "M1" --color 1d76db
+gh label create "M2" --color 1d76db
+gh label create "M3" --color 1d76db
+
+# --- สร้าง Issue ---
+gh issue create \
+  --title "Issue #1: [ชื่อ]" \
+  --body "$(cat <<'EOF'
+## Description
+...
+
+## Acceptance Criteria
+- [ ] ...
+
+## Test Cases
+...
+EOF
+)" \
+  --label "V0,status: open"
+
+# --- อ่าน Issues ที่ยังเปิดอยู่ ---
+gh issue list --state open
+
+# --- เริ่ม work บน issue (เปลี่ยน label + comment) ---
+gh issue edit 1 --remove-label "status: open" --add-label "status: in-progress"
+gh issue comment 1 --body "🤖 Subagent started — $(date)"
+
+# --- issue done (QA passed) ---
+gh issue edit 1 --remove-label "status: in-progress" --add-label "status: done,qa-passed"
+gh issue comment 1 --body "✅ Done — files changed: [...], tests: passed"
+gh issue close 1
+
+# --- issue QA failed ---
+gh issue edit 1 --add-label "qa-failed"
+gh issue comment 1 --body "❌ QA Failed — [รายละเอียด test ที่ fail]"
+
+# --- issue blocked ---
+gh issue edit 1 --remove-label "status: in-progress" --add-label "status: blocked"
+gh issue comment 1 --body "🚫 Blocked: [เหตุผล] — needs human input"
+
+# --- open PR ---
+gh pr create \
+  --title "feat: [ชื่อ feature]" \
+  --body "Closes #1, #2" \
+  --base main \
+  --head feat/issue-1-slug
+```
 
 ### Orchestrator System Prompt
 
@@ -645,12 +746,16 @@ You manage a queue of GitHub Issues and dispatch them to subagents for implement
 Your responsibilities:
 1. Pick the next executable issue (no unresolved blockers)
 2. Spawn a subagent with full context for that issue
-3. Collect the result and update the issue status
+3. Collect the result and update the issue status using `gh` CLI commands
 4. Open a PR when a feature group is complete
 5. Invoke the PR Review Agent on each PR
 
 You do NOT write implementation code directly.
 You ONLY orchestrate, track status, and escalate blockers.
+
+CRITICAL: Every status update, label change, and comment MUST be done via `gh` CLI.
+Do NOT just say "I would update the issue" — actually run the commands.
+Use the GitHub Issue Management section above for exact commands.
 ```
 
 ### Execution Loop
@@ -658,17 +763,15 @@ You ONLY orchestrate, track status, and escalate blockers.
 ```
 WHILE issues remain in queue:
 
-  1. SELECT next issue where:
-     - status = 'open'
-     - all blockers = 'closed'
-     - priority = highest
+  1. SELECT next issue where status = open and all blockers = closed
+     → gh issue list --state open --label "status: open"
 
-  2. UPDATE issue:
-     - Add label: `status: in-progress`
-     - Add comment: "🤖 Subagent started — [timestamp]"
+  2. RUN (ทันที — ห้ามแค่บอกว่าจะทำ):
+     gh issue edit <N> --remove-label "status: open" --add-label "status: in-progress"
+     gh issue comment <N> --body "🤖 Subagent started — $(date)"
 
   3. SPAWN subagent with:
-     - Issue spec (full content)
+     - Issue spec (full content from: gh issue view <N>)
      - Codebase context (relevant files only)
      - Tech stack constraints
      - .env.development values
@@ -684,27 +787,26 @@ WHILE issues remain in queue:
      - QA Agent รัน test cases ทุกอัน (automated + manual steps)
      - QA Agent รายงาน: QA_PASSED | QA_FAILED
 
-  5a. If SUCCESS + QA_PASSED:
-      - UPDATE issue: label `status: done`, `qa-passed`, close issue
-      - Add comment with: files changed, test results, QA report, screenshot (if UI)
+  5a. If SUCCESS + QA_PASSED → RUN:
+      gh issue edit <N> --remove-label "status: in-progress" --add-label "status: done,qa-passed"
+      gh issue comment <N> --body "✅ Done — files: [...], tests: passed\n[QA report]"
+      gh issue close <N>
 
-  5b. If SUCCESS + QA_FAILED:
-      - UPDATE issue: label `status: in-progress`, `qa-failed`
-      - Add comment: QA report + failed test cases
-      - Subagent ต้องใช้ `superpowers:systematic-debugging` ก่อนแก้ bug
-        (ห้าม patch แบบ random — ต้องหา root cause ก่อนเสมอ)
-      - Subagent แก้ไขตาม QA report → loop กลับ step 4
-      - หลัง 2 รอบยังไม่ผ่าน → label `status: blocked` → alert human
+  5b. If SUCCESS + QA_FAILED → RUN:
+      gh issue edit <N> --add-label "qa-failed"
+      gh issue comment <N> --body "❌ QA Failed\n[รายละเอียด test ที่ fail]"
+      (Subagent ใช้ superpowers:systematic-debugging → แก้ → loop กลับ step 4)
+      หลัง 2 รอบยังไม่ผ่าน → ทำ step 5c
 
-  5c. If BLOCKED:
-      - UPDATE issue: label `status: blocked`
-      - Add comment: "🚫 Blocked: [reason] — needs human input"
-      - STOP this issue, move to next
+  5c. If BLOCKED → RUN:
+      gh issue edit <N> --remove-label "status: in-progress" --add-label "status: blocked"
+      gh issue comment <N> --body "🚫 Blocked: [เหตุผล] — needs human input"
+      STOP this issue, move to next
 
-  5d. If FAILED (after 2 retries):
-      - UPDATE issue: label `status: failed`
-      - Add comment: error log + what was attempted
-      - STOP and alert human
+  5d. If FAILED (after 2 retries) → RUN:
+      gh issue edit <N> --add-label "status: failed"
+      gh issue comment <N> --body "💥 Failed after 2 retries\n[error log]"
+      STOP and alert human
 
   6. WHEN V0 milestone complete:
      - Deploy demo URL ไป Vercel preview
