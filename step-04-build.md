@@ -675,6 +675,55 @@ gh issue list --state open
 > Orchestrator ต้องใช้ `gh` CLI ทุกครั้งที่ต้องการ create/update/close issue
 > **ห้ามอธิบายว่า "ควรจะ update issue" — ต้องรัน `gh` command จริงๆ เสมอ**
 
+#### ก่อนใช้ `gh` ครั้งแรก — ตรวจและแนะนำ user
+
+```bash
+# ตรวจว่า gh ติดตั้งแล้วหรือยัง
+gh --version
+```
+
+ถ้าได้ error `command not found` → แจ้ง user ให้ติดตั้งก่อน:
+
+```
+GitHub CLI ยังไม่ได้ติดตั้ง — กรุณาติดตั้งก่อนดำเนินการต่อ:
+
+macOS:
+  brew install gh
+
+Windows:
+  winget install --id GitHub.cli
+  หรือ https://cli.github.com/
+
+Linux (apt):
+  sudo apt install gh
+
+หลังติดตั้งแล้ว รัน: gh auth login
+```
+
+```bash
+# ตรวจว่า login แล้วหรือยัง
+gh auth status
+```
+
+ถ้าได้ error `You are not logged into any GitHub hosts` → แจ้ง user ให้ login:
+
+```
+GitHub CLI ยังไม่ได้ login — กรุณารันคำสั่งนี้ก่อน:
+
+  gh auth login
+
+ขั้นตอน:
+  1. เลือก: GitHub.com
+  2. เลือก: HTTPS
+  3. เลือก: Login with a web browser
+  4. copy one-time code → เปิด browser → paste → Authorize
+```
+
+> **Orchestrator**: ตรวจ `gh --version` และ `gh auth status` ก่อนเริ่ม Phase B เสมอ
+> ถ้า check ไม่ผ่าน → หยุดและแสดงข้อความแนะนำข้างบน ก่อนดำเนินการต่อ
+
+---
+
 ```bash
 # --- SETUP (ครั้งเดียว ต้องทำก่อน Phase B) ---
 gh auth login                              # login ด้วย GitHub account
