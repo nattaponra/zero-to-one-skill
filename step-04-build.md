@@ -116,7 +116,8 @@ NEXT_PUBLIC_APP_URL=https://yourdomain.com
 
 ## PHASE A: WRITE PLAN TO GITHUB ISSUES
 
-> ดัดแปลงจาก superpowers/writing-plans + plan-document-reviewer-prompt
+> **REQUIRED SKILL:** ใช้ `superpowers:writing-plans` ในขั้นตอนนี้
+> บันทึก plan ไปที่ `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`
 
 ### System Prompt (Phase A)
 
@@ -155,6 +156,8 @@ Rules:
 ```markdown
 # MVP Build Plan
 > Input: 03_design_brief.md | Tech Stack: Next.js · MUI · Supabase · OpenRouter · Stripe
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` to execute this plan task-by-task.
 
 ## Milestone Overview
 | Milestone | Issues | เป้าหมาย | Sprint |
@@ -327,7 +330,8 @@ Output format:
 
 ## PHASE B: EXECUTE (Subagent-Driven Development)
 
-> ดัดแปลงจาก superpowers/executing-plans + subagent-driven-development
+> **REQUIRED SKILL:** ใช้ `superpowers:subagent-driven-development` ในขั้นตอนนี้
+> Fresh subagent ต่อ 1 issue + two-stage review (spec compliance → code quality) ทุกอัน
 
 ### Orchestrator System Prompt
 
@@ -384,6 +388,8 @@ WHILE issues remain in queue:
   5b. If SUCCESS + QA_FAILED:
       - UPDATE issue: label `status: in-progress`, `qa-failed`
       - Add comment: QA report + failed test cases
+      - Subagent ต้องใช้ `superpowers:systematic-debugging` ก่อนแก้ bug
+        (ห้าม patch แบบ random — ต้องหา root cause ก่อนเสมอ)
       - Subagent แก้ไขตาม QA report → loop กลับ step 4
       - หลัง 2 รอบยังไม่ผ่าน → label `status: blocked` → alert human
 
@@ -426,6 +432,9 @@ Do not add features not in the spec. Do not change the tech stack.
 - Feature gating — check plan ที่ **server side เท่านั้น** (Route Handler / Server Action) — ห้าม trust client
 - Usage limits — นับและ check ใน `usage_logs` table ก่อนทุก operation ที่มี quota — return 403 ถ้าเกิน
 - TypeScript — strict mode, no `any`, no `as unknown as X`
+- **ก่อน report SUCCESS ทุกครั้ง:** ใช้ `superpowers:verification-before-completion`
+  (รัน verification commands จริง อ่าน output จริง — ห้ามอ้างว่า done โดยไม่มี evidence)
+- **ถ้า QA_FAILED:** ใช้ `superpowers:systematic-debugging` — หา root cause ก่อน ห้าม patch
 
 ## ENV Available
 [วาง .env.development ที่นี่ — ลบ value ที่เป็น secret จริง]
@@ -459,6 +468,9 @@ done          → เสร็จ ผ่าน QA และ criteria ทุก�
 ---
 
 ## PR WORKFLOW
+
+> **REQUIRED SKILL:** เมื่อ milestone complete ให้ใช้ `superpowers:finishing-a-development-branch`
+> (verify tests → detect environment → present merge/PR/keep/discard options → execute)
 
 ### เมื่อไหรจะเปิด PR
 - เมื่อ milestone ครบ (M0, M1, M2, M3)

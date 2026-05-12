@@ -8,9 +8,21 @@
 
 ```mermaid
 flowchart TD
-    START([💡 ไอเดีย\n1–2 ประโยค])
+    START(["💡 Raw Idea\nแค่ keyword ก็พอ"])
 
-    START --> S01
+    START --> S00
+
+    subgraph S00["⚙️ Step 00 · Brainstorm"]
+        direction LR
+        A0["AI Product Strategist\nถามคำถาม clarifying ทีละข้อ\nเสนอ 2-3 directions + trade-off\nผลลัพธ์: 00_idea_card.md"]
+    end
+
+    S00 --> H0
+
+    H0{"👤 Human Checkpoint 0\n\nเลือก direction แล้ว?\nIS / IS NOT ของ MVP ชัด?\nTop 3 assumptions ระบุแล้ว?"}
+
+    H0 -->|"✅ Approve"| S01
+    H0 -->|"🔄 ปรับ direction"| S00
 
     subgraph S01["⚙️ Step 01 · Discovery & Research"]
         direction LR
@@ -22,7 +34,7 @@ flowchart TD
     H1{"👤 Human Checkpoint 1\n\nปัญหาสมเหตุสมผล?\nMarket signal แข็งพอ?\nCompetitor gap ชัดเจน?"}
 
     H1 -->|"✅ Approve"| S02
-    H1 -->|"🔄 ปรับ idea"| START
+    H1 -->|"🔄 ปรับ idea"| S00
 
     subgraph S02["⚙️ Step 02 · Define & Validate"]
         direction LR
@@ -83,6 +95,7 @@ flowchart TD
 
     style START fill:#f0f4ff,stroke:#4f6ef7
     style DONE fill:#f0fff4,stroke:#22c55e
+    style H0 fill:#fff7ed,stroke:#f97316
     style H1 fill:#fff7ed,stroke:#f97316
     style H2 fill:#fff7ed,stroke:#f97316
     style H3 fill:#fff7ed,stroke:#f97316
@@ -96,6 +109,7 @@ flowchart TD
 
 | # | จุด | สิ่งที่ต้องตรวจ | ใช้เวลา |
 |---|-----|----------------|---------|
+| 0 | หลัง Brainstorm | Direction ชัด? IS/IS NOT ของ MVP ตกลง? Top 3 assumptions ระบุแล้ว? | 15–30 นาที |
 | 1 | หลัง Discovery | Problem จริง? Market signal แข็ง? Competitor gap ชัด? | 30 นาที |
 | 2 | หลัง Define | P0 ≤ 5 features? Pricing tiers สมเหตุสมผล? Riskiest assumption ระบุชัด? | 45 นาที |
 | 3 | หลัง Design | ทุก P0 screen มี spec? v0/Bolt prompt ใช้ได้? Upgrade flow ครบ? | 1 ชั่วโมง |
@@ -128,6 +142,7 @@ flowchart TD
 | ไฟล์ | บทบาท |
 |------|-------|
 | `SKILL.md` | Entry point สำหรับ Claude agent |
+| `step-00-brainstorm.md` | Brainstorm dialogue — ตกผลึก idea ก่อน research |
 | `step-01-discovery.md` | System prompt + output schema สำหรับ Step 01 |
 | `step-02-define.md` | System prompt + PRD schema + pricing matrix |
 | `step-03-design.md` | Design brief schema + screen specs + v0 prompts |
@@ -137,27 +152,34 @@ flowchart TD
 
 ## วิธีใช้งาน
 
-### เริ่มต้น (Step 01)
+### เริ่มต้น (Step 00)
 
-1. เตรียมไอเดีย 1–2 ประโยค เช่น:
-   ```
-   แอปช่วย SME ไทยสร้าง content โซเชียลมีเดียด้วย AI
-   โดยที่เจ้าของร้านไม่ต้องมีความรู้ด้าน marketing
-   ```
+1. มีไอเดีย ไม่ต้องสมบูรณ์ — keyword เดียวก็พอ เช่น `"แอปช่วย SME ทำ content"`
 
-2. เปิด `step-01-discovery.md` → copy **System Prompt** + **Prompt Template** → วาง idea → รันกับ Claude
+2. เปิด `step-00-brainstorm.md` → เริ่ม dialogue กับ Claude → ได้ `00_idea_card.md` ที่ approve แล้ว
 
-3. ตรวจ **Validation Checklist** → approve → ส่ง output ไป Step 02
+3. ตรวจ **Validation Checklist** ในแต่ละ step ก่อนส่งต่อเสมอ
 
 ### ส่งต่อระหว่าง steps
 
-แต่ละ step มี `🔗 HANDOFF` section ที่ด้านบนของ output — กรอกให้ครบก่อนส่งต่อเสมอ
+แต่ละ step มี `🔗 HANDOFF` section ที่ด้านบนของ output — **กรอกให้ครบก่อนส่งต่อเสมอ**
 
 ```
+Step 00 output → วาง 00_idea_card.md ใน Step 01 prompt
 Step 01 output → วาง 01_discovery_report.md ทั้งหมดใน Step 02 prompt
 Step 02 output → วาง 02_definition_report.md ทั้งหมดใน Step 03 prompt
 Step 03 output → วาง 03_design_brief.md ทั้งหมดใน Step 04 Phase A prompt
 ```
+
+### Superpowers skills ที่ใช้ใน Step 04
+
+| Skill | ใช้เมื่อไหร่ |
+|-------|------------|
+| `superpowers:writing-plans` | Phase A — เขียน plan |
+| `superpowers:subagent-driven-development` | Phase B — execute issues |
+| `superpowers:verification-before-completion` | ก่อน subagent report SUCCESS ทุกครั้ง |
+| `superpowers:systematic-debugging` | เมื่อ QA_FAILED — หา root cause ก่อนแก้ |
+| `superpowers:finishing-a-development-branch` | เมื่อ milestone complete — merge/PR |
 
 ---
 

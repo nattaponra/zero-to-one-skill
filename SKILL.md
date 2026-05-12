@@ -17,7 +17,10 @@ Pipeline เปลี่ยนไอเดีย 1–2 ประโยคให�
 ## Pipeline
 
 ```
-[IDEA]  (1–2 ประโยค)
+[IDEA]  (raw — แค่ keyword หรือ 1–2 ประโยคก็พอ)
+   │
+   ▼
+Step 00: Brainstorm             ──→  00_idea_card.md          (15–30 นาที)
    │
    ▼
 Step 01: Discovery & Research  ──→  01_discovery_report.md   (2–3 ชม.)
@@ -38,7 +41,8 @@ Step 04: Build MVP             ──→  Working code + PRs       (2–4 สั
 
 | Step | Role | Input | Output | ไฟล์รายละเอียด |
 |------|------|-------|--------|---------------|
-| 01 Discovery | Research Analyst | Idea (1–2 ประโยค) | `01_discovery_report.md` | [step-01-discovery.md](step-01-discovery.md) |
+| 00 Brainstorm | Product Strategist | Raw idea | `00_idea_card.md` | [step-00-brainstorm.md](step-00-brainstorm.md) |
+| 01 Discovery | Research Analyst | `00_idea_card.md` | `01_discovery_report.md` | [step-01-discovery.md](step-01-discovery.md) |
 | 02 Define | Product Manager | `01_discovery_report.md` | `02_definition_report.md` | [step-02-define.md](step-02-define.md) |
 | 03 Design | UX Designer | `02_definition_report.md` | `03_design_brief.md` | [step-03-design.md](step-03-design.md) |
 | 04 Build | Eng Lead + Subagents | `03_design_brief.md` | Working MVP | [step-04-build.md](step-04-build.md) |
@@ -47,8 +51,9 @@ Step 04: Build MVP             ──→  Working code + PRs       (2–4 สั
 
 ## วิธีเริ่มใช้งาน
 
-1. เตรียมไอเดีย 1–2 ประโยค เช่น `"แอปช่วย SME ไทยสร้าง content โซเชียลมีเดียด้วย AI"`
-2. เปิด **[step-01-discovery.md](step-01-discovery.md)** → copy System Prompt + Prompt Template → วาง `[IDEA]` → รันกับ Claude
+1. มีไอเดีย ไม่ต้องสมบูรณ์ — keyword เดียวก็พอ
+2. เปิด **[step-00-brainstorm.md](step-00-brainstorm.md)** → ทำ dialogue กับ Claude จนได้ `00_idea_card.md` ที่ approve แล้ว
+3. เปิด **[step-01-discovery.md](step-01-discovery.md)** → copy System Prompt + Prompt Template → วาง idea card → รันกับ Claude
 3. ตรวจ **Validation Checklist** ในแต่ละ step ก่อนส่งต่อ
 4. แต่ละ step มี `🔗 HANDOFF` section ด้านบน output — **ต้องกรอกให้ครบก่อนส่งต่อเสมอ**
 5. ทำซ้ำ Step 02 → 03 → 04
