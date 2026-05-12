@@ -6,6 +6,63 @@ description: Use when turning a raw product idea into a shipped MVP. Triggers on
 # Zero-to-One Skill
 > ไอเดีย → Working MVP ใน 4 ขั้นตอน
 
+## FIRST: ตรวจสอบสถานะโปรเจกต์ก่อนทำอะไรทั้งนั้น
+
+> **ทำทันทีที่ skill นี้ถูกเรียก — ก่อนถามหรือทำอะไรทั้งสิ้น**
+
+```bash
+# ตรวจไฟล์ output ของแต่ละ step
+ls *.md 2>/dev/null
+ls docs/superpowers/plans/ 2>/dev/null
+cat PROGRESS.md 2>/dev/null
+gh issue list --state all 2>/dev/null | head -20
+```
+
+จากนั้นประเมินสถานะตาม decision tree นี้:
+
+```
+มี PROGRESS.md?
+├── YES → อ่าน PROGRESS.md → แจ้ง "โปรเจกต์นี้อยู่ที่ [milestone] ต่อจาก: [Next Action]"
+│          → ถามว่า "ต้องการทำต่อจากตรงนี้เลยไหม?"
+│
+└── NO → ตรวจไฟล์ตามลำดับ:
+    │
+    ├── ไม่มีไฟล์อะไรเลย
+    │   → แจ้ง "เริ่มต้นใหม่ — Step 00 Brainstorm"
+    │   → เริ่ม step-00-brainstorm.md
+    │
+    ├── มี 00_idea_card.md แต่ไม่มี 01_discovery_report.md
+    │   → แจ้ง "idea card พร้อมแล้ว — ต่อด้วย Step 01 Discovery"
+    │   → เริ่ม step-01-discovery.md
+    │
+    ├── มี 01_discovery_report.md แต่ไม่มี 02_definition_report.md
+    │   → แจ้ง "discovery เสร็จแล้ว — ต่อด้วย Step 02 Define"
+    │   → เริ่ม step-02-define.md
+    │
+    ├── มี 02_definition_report.md แต่ไม่มี 03_design_brief.md
+    │   → แจ้ง "definition เสร็จแล้ว — ต่อด้วย Step 03 Design"
+    │   → เริ่ม step-03-design.md
+    │
+    ├── มี 03_design_brief.md แต่ไม่มี docs/superpowers/plans/
+    │   → แจ้ง "design brief พร้อมแล้ว — ต่อด้วย Step 04A Plan"
+    │   → เริ่ม Phase A ใน step-04-build.md
+    │
+    └── มี docs/superpowers/plans/ และ/หรือมี gh issues
+        → แจ้ง "plan เสร็จแล้ว — ต่อด้วย Step 04B Build"
+        → รัน SESSION RESUME ใน step-04-build.md
+```
+
+**แจ้งผลให้ user เห็นชัดเจน เช่น:**
+```
+พบว่าโปรเจกต์นี้ทำมาถึง Step 02 Define แล้ว
+ไฟล์ที่มี: 00_idea_card.md ✅  01_discovery_report.md ✅  02_definition_report.md ✅
+ขั้นตอนถัดไป: Step 03 Design — ออกแบบ screens + v0 prompts
+
+ต้องการทำต่อเลยไหม?
+```
+
+---
+
 ## Overview
 
 Pipeline เปลี่ยนไอเดีย 1–2 ประโยคให้กลายเป็น working MVP พร้อม deploy โดย AI agents ทำงานแต่ละ step และส่ง HANDOFF ให้ขั้นถัดไปโดยอัตโนมัติ
