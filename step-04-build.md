@@ -93,20 +93,30 @@ msw                          # mock API / Supabase / OpenRouter ใน tests
 ## ENV MANAGEMENT
 
 > **Rule:** ไม่มี hardcode secret ใน codebase ทุกค่าต้องมาจาก env
+> **Stack:** Supabase cloud + Vercel — ไม่ต้องใช้ Docker หรือ local Supabase
+
+### Supabase Projects (แยก dev / prod)
+
+| Environment | Supabase Project | Vercel |
+|-------------|-----------------|--------|
+| Development | `<project>-dev` | preview branches |
+| Production | `<project>-prod` | main branch |
+
+> สร้าง 2 Supabase projects แยกกันตั้งแต่เริ่ม — ป้องกัน dev data ปน prod
 
 ### `.env.development` (ใช้ระหว่าง dev — ไม่ commit)
 ```bash
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-local-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-local-service-role-key
+# Supabase — Dev project (https://supabase.com/dashboard)
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-dev-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-dev-service-role-key
 
 # OpenRouter
 OPENROUTER_API_KEY=sk-or-dev-xxxx
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_DEFAULT_MODEL=anthropic/claude-3-haiku   # ใช้ model ถูกระหว่าง dev
 
-# Stripe
+# Stripe — Test mode (https://dashboard.stripe.com/test/apikeys)
 STRIPE_SECRET_KEY=sk_test_xxxx
 STRIPE_WEBHOOK_SECRET=whsec_test_xxxx
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxxx
@@ -115,7 +125,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxxx
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-### `.env.example` (commit ขึ้น repo — user copy ไปตั้งค่าเอง)
+### `.env.example` (commit ขึ้น repo)
 ```bash
 # ========================================
 # SUPABASE — https://supabase.com/dashboard
@@ -129,7 +139,7 @@ SUPABASE_SERVICE_ROLE_KEY=
 # ========================================
 OPENROUTER_API_KEY=
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
-OPENROUTER_DEFAULT_MODEL=anthropic/claude-3-5-sonnet   # เปลี่ยนได้
+OPENROUTER_DEFAULT_MODEL=anthropic/claude-3-5-sonnet
 
 # ========================================
 # STRIPE — https://dashboard.stripe.com/apikeys
@@ -148,103 +158,102 @@ NEXT_PUBLIC_APP_URL=https://yourdomain.com
 
 ---
 
-## LOCAL DEVELOPMENT SETUP
+## DEVELOPMENT SETUP
 
-> ต้องรัน local ได้ก่อน deploy เสมอ — test บน local → Vercel preview → production
+> ไม่ต้องใช้ Docker — รัน local + test บน Supabase cloud + Vercel preview
 
-### Prerequisites
+### Prerequisites (ติดครั้งเดียว)
 
 ```bash
-# ติดตั้ง package manager
 npm install -g pnpm
 
-# ติดตั้ง Supabase CLI (สำหรับ M0+ เท่านั้น — ไม่ต้องมีใน V0)
+# Supabase CLI — สำหรับ push migrations และ gen types เท่านั้น (ไม่ต้อง Docker)
 brew install supabase/tap/supabase
 
-# ติดตั้ง Stripe CLI (สำหรับ M2+ เท่านั้น)
+# Stripe CLI — สำหรับ test webhooks บน local (M2+)
 brew install stripe/stripe-cli/stripe
 ```
 
 ---
 
-### V0 Local Setup (2 นาที)
+### V0 Setup (2 นาที)
 
-> V0 ใช้ mock ทุกอย่าง — ไม่ต้องมี Supabase หรือ Stripe
+> V0 ใช้ mock auth + mock data — ต้องการแค่ OpenRouter key
 
 ```bash
-# 1. Clone และ install
 git clone <repo-url> && cd <project>
 pnpm install
-
-# 2. สร้าง env (V0 ใช้แค่ OpenRouter)
 cp .env.example .env.development
-# แก้ไข OPENROUTER_API_KEY=sk-or-xxxx
+# แก้ OPENROUTER_API_KEY=sk-or-xxxx
 
-# 3. รัน dev server
-pnpm dev
-# เปิด http://localhost:3000
+pnpm dev   # → http://localhost:3000
 ```
 
 ---
 
-### M0+ Local Setup (full stack)
-
-> เริ่มหลัง V0 ผ่าน human checkpoint แล้ว
+### M0+ Setup (full stack — หลัง V0 ผ่านแล้ว)
 
 ```bash
-# 1. เริ่ม Supabase local (Docker ต้องรันอยู่)
-supabase start
-# จะได้ค่า ANON_KEY และ SERVICE_ROLE_KEY — copy ใส่ .env.development
+# 1. สร้าง Supabase dev project ที่ https://supabase.com/dashboard
+#    → copy URL + ANON_KEY + SERVICE_ROLE_KEY ใส่ .env.development
 
-# 2. รัน migrations
-supabase db push
+# 2. Link CLI กับ cloud project (ครั้งแรกครั้งเดียว)
+supabase link --project-ref <project-ref>
 
-# 3. (optional) Seed ข้อมูลทดสอบ
-supabase db seed
+# 3. Push migrations ขึ้น cloud
+pnpm db:push
 
-# 4. รัน dev server
+# 4. Seed ข้อมูลทดสอบ (optional)
+pnpm db:seed
+
+# 5. Generate TypeScript types จาก schema
+pnpm db:types
+
+# 6. รัน dev server
+pnpm dev   # → http://localhost:3000 (ต่อ Supabase cloud dev project)
+```
+
+---
+
+### M2+ Stripe Webhook (local testing)
+
+```bash
+# Terminal 1
 pnpm dev
-# เปิด http://localhost:3000
 
-# 5. (M2+) รัน Stripe webhook listener แยก terminal
+# Terminal 2
 stripe login
 stripe listen --forward-to localhost:3000/api/stripe/webhook
-# copy webhook secret → STRIPE_WEBHOOK_SECRET ใน .env.development
-```
-
-### ค่า env ที่ได้จาก `supabase start`
-
-```bash
-# copy ค่าพวกนี้ไปใส่ .env.development
-NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<ค่าจาก supabase start output>
-SUPABASE_SERVICE_ROLE_KEY=<ค่าจาก supabase start output>
+# copy "whsec_..." → STRIPE_WEBHOOK_SECRET ใน .env.development
 ```
 
 ---
 
-### Local Test Commands
+### Vercel Preview (test บน cloud ก่อน merge)
 
-```bash
-# Unit + Integration tests
-pnpm test                        # รันครั้งเดียว
-pnpm test:watch                  # watch mode ระหว่าง dev
-
-# E2E tests (ต้องมี dev server รันอยู่)
-pnpm dev &                       # รัน dev server background
-pnpm test:e2e                    # รัน Playwright
-
-# ดู E2E results แบบ visual
-pnpm test:e2e --ui
-
-# Type check
-pnpm type-check
-
-# Lint
-pnpm lint
+```
+Push branch → GitHub → Vercel สร้าง preview URL อัตโนมัติ
+Preview URL ใช้ env vars จาก Vercel dashboard (ชี้ไป Supabase dev project)
 ```
 
-### `package.json` scripts ที่ต้องมี
+**Vercel env vars ที่ต้องตั้ง (Settings → Environment Variables):**
+- Preview & Development: ใช้ Supabase dev project keys
+- Production: ใช้ Supabase prod project keys
+
+---
+
+### Test Commands
+
+```bash
+pnpm test            # unit + integration (Vitest)
+pnpm test:watch      # watch mode
+pnpm test:e2e        # E2E (Playwright) — ต้องมี pnpm dev รันอยู่
+pnpm test:e2e:ui     # Playwright visual mode
+pnpm type-check      # TypeScript
+pnpm lint            # ESLint
+```
+
+### `package.json` scripts
 
 ```json
 {
@@ -258,27 +267,25 @@ pnpm lint
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "db:start": "supabase start",
-    "db:stop": "supabase stop",
     "db:push": "supabase db push",
     "db:seed": "supabase db seed",
-    "db:types": "supabase gen types typescript --local > src/types/database.ts"
+    "db:types": "supabase gen types typescript --linked > src/types/database.ts"
   }
 }
 ```
 
 ---
 
-### Local Dev Checklist (ก่อน push ทุกครั้ง)
+### Dev Checklist (ก่อน push ทุกครั้ง)
 
 ```bash
 pnpm lint && pnpm type-check && pnpm test
 ```
 
-- [ ] `pnpm dev` รันได้ ไม่มี error ใน console
-- [ ] feature ที่ implement ทำงานได้บน local ก่อน push
+- [ ] `pnpm dev` รันได้ ต่อ Supabase cloud dev project ได้
+- [ ] feature ทำงานได้บน local + Vercel preview URL
 - [ ] `pnpm test` ผ่านทุกอัน
-- [ ] ไม่มี `.env.development` values ติดมาใน commit (`git grep` หา secret)
+- [ ] ไม่มี secret ติดมาใน commit
 
 ---
 
@@ -1011,16 +1018,18 @@ my-product/
 #4 Project Setup (full)
 - ต่อยอดจาก V0 scaffold — เพิ่ม ESLint, Prettier, Husky, lint-staged
 - Install Supabase, Stripe, Vitest, Playwright, Testing Library, msw
-- สร้าง .env.example และ .env.development ครบถ้วน
+- สร้าง .env.example และ .env.development (ชี้ไป Supabase cloud dev project)
 - เพิ่ม scripts ทุกตัวใน package.json (dev, test, test:e2e, lint, type-check, db:*)
-- ยืนยัน `pnpm dev` รันได้บน local ก่อน merge
-- Setup Vercel project + connect GitHub อย่างเป็นทางการ
+- `supabase link --project-ref <dev-project-ref>` — link CLI กับ cloud
+- ตั้ง Vercel env vars: Preview → dev keys, Production → prod keys
+- ยืนยัน `pnpm dev` รันได้ + ต่อ Supabase cloud ได้
 
 #5 Database Schema & Migrations
 - Design Supabase tables จาก PRD
-- Write migration SQL
+- Write migration files ใน `supabase/migrations/`
 - Enable RLS บนทุก table
-- Generate TypeScript types (supabase gen types)
+- `pnpm db:push` — push migrations ขึ้น Supabase cloud dev project
+- `pnpm db:types` — generate TypeScript types จาก schema
 
 #6 Authentication
 - Supabase Auth — email/password + magic link
