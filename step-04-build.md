@@ -885,6 +885,15 @@ Do not add features not in the spec. Do not change the tech stack.
 ## Codebase Context
 [วาง content ของ files ที่เกี่ยวข้อง]
 
+## Required Skills
+- **ถ้า issue เป็น UI / frontend (page, component, layout, design):**
+  Use `frontend-design` skill (see skills/frontend-design/SKILL.md in this repo).
+  Apply before writing any frontend code — commit to a bold aesthetic direction first.
+  Avoid generic AI aesthetics: no Inter/Roboto, no purple gradients, no cookie-cutter layouts.
+
+- **ก่อน report SUCCESS ทุกครั้ง:** ใช้ `superpowers:verification-before-completion`
+- **ถ้า QA_FAILED:** ใช้ `superpowers:systematic-debugging` — หา root cause ก่อน ห้าม patch
+
 ## Tech Stack Constraints
 - Next.js App Router — use server components by default, client only when needed
 - MUI — use sx prop, not inline style. Theme via ThemeProvider
@@ -895,9 +904,6 @@ Do not add features not in the spec. Do not change the tech stack.
 - Feature gating — check plan ที่ **server side เท่านั้น** (Route Handler / Server Action) — ห้าม trust client
 - Usage limits — นับและ check ใน `usage_logs` table ก่อนทุก operation ที่มี quota — return 403 ถ้าเกิน
 - TypeScript — strict mode, no `any`, no `as unknown as X`
-- **ก่อน report SUCCESS ทุกครั้ง:** ใช้ `superpowers:verification-before-completion`
-  (รัน verification commands จริง อ่าน output จริง — ห้ามอ้างว่า done โดยไม่มี evidence)
-- **ถ้า QA_FAILED:** ใช้ `superpowers:systematic-debugging` — หา root cause ก่อน ห้าม patch
 
 ## ENV Available
 [วาง .env.development ที่นี่ — ลบ value ที่เป็น secret จริง]
