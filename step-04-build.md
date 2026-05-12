@@ -665,6 +665,86 @@ gh issue list --state open
 
 ---
 
+## SESSION RESUME — กลับมาต่อหลัง Context หาย
+
+> **ใช้ section นี้ทุกครั้งที่เริ่ม session ใหม่ หรือรู้สึกว่าลืมว่าทำถึงไหน**
+> GitHub Issues + `PROGRESS.md` คือ source of truth — ห้ามเดาสถานะจาก memory
+
+### ขั้นตอน Resume (รันตามลำดับ)
+
+```bash
+# 1. ดูว่าอยู่ milestone ไหน
+cat PROGRESS.md
+
+# 2. ดู issue ที่ยังค้างอยู่
+gh issue list --state open --label "status: in-progress"
+
+# 3. ดู issue ที่รอทำต่อ
+gh issue list --state open --label "status: open"
+
+# 4. ดู issue ที่เสร็จแล้ว (เพื่อรู้ว่าผ่านมาถึงไหน)
+gh issue list --state closed
+
+# 5. ดู branch ที่มีอยู่
+git branch -a | grep feat/
+```
+
+### สิ่งที่ต้องทำหลัง Resume
+
+```
+ถ้ามี issue ที่ status: in-progress อยู่:
+→ issue นั้นค้างกลางคัน — อ่าน issue spec ก่อน
+→ ดู branch: git log feat/issue-N-slug --oneline
+→ ถ้า code มีอยู่แล้ว: รัน verification commands ก่อน → ถ้าผ่านแล้วให้ QA → ถ้ายังไม่ผ่านให้ implement ต่อ
+→ ถ้า branch ไม่มีอะไรเลย: implement ใหม่ตาม spec
+
+ถ้าไม่มี in-progress:
+→ หยิบ issue แรกจาก status: open ที่ไม่มี blocker
+→ เริ่ม Execution Loop ตามปกติ
+```
+
+### PROGRESS.md — อัปเดตทุก milestone
+
+> **Orchestrator ต้องเขียน/อัปเดต `PROGRESS.md` ทุกครั้งที่:**
+> - จบ V0 milestone
+> - จบ M0 / M1 / M2 / M3
+> - หยุดทำงาน (end of session)
+
+```markdown
+# Build Progress
+
+**Last updated:** [วันที่ เวลา]
+**Current milestone:** [V0 / M0 / M1 / M2 / M3]
+**Current branch:** [ชื่อ branch ที่กำลังทำ]
+
+## Milestone Status
+- [x] V0 — demo deployed: [URL]
+- [ ] M0 — Foundation
+- [ ] M1 — Core Features
+- [ ] M2 — Payments
+- [ ] M3 — Polish
+
+## Issue Summary
+- Done: #1, #2, #3
+- In-progress: #4
+- Blocked: (none)
+- Open: #5, #6, #7, #8, #9
+
+## Next Action
+[อธิบาย 1 ประโยคว่าต้องทำอะไรต่อ เช่น "Implement #4 Supabase Auth"]
+
+## Notes
+[อะไรก็ตามที่ AI รุ่นถัดไปต้องรู้ เช่น "ยังไม่ได้ set STRIPE_WEBHOOK_SECRET ใน Vercel"]
+```
+
+```bash
+# บันทึก progress หลังทุก milestone
+git add PROGRESS.md
+git commit -m "progress: update after [milestone name]"
+```
+
+---
+
 ## PHASE B: EXECUTE (Subagent-Driven Development)
 
 > **REQUIRED SKILL:** ใช้ `superpowers:subagent-driven-development` (ดู `skills/superpowers/subagent-driven-development/SKILL.md`) ในขั้นตอนนี้
@@ -859,6 +939,9 @@ WHILE issues remain in queue:
 
   6. WHEN V0 milestone complete:
      - Deploy demo URL ไป Vercel preview
+     - UPDATE PROGRESS.md → current milestone: V0 done, next: M0
+       gh issue comment <V0-last-issue> --body "✅ V0 complete — demo: [URL]"
+       git add PROGRESS.md && git commit -m "progress: V0 complete"
      - 🛑 STOP — รอ Human Checkpoint ก่อน
      - แจ้ง human: "V0 demo พร้อมแล้วที่ [URL] — core feature ทำงานได้
        ก่อนลงทุนกับ infrastructure (auth, DB, CI/CD) ขอ confirm ว่านี่คือ
@@ -866,7 +949,14 @@ WHILE issues remain in queue:
      - รอ approve → ถึงจะเริ่ม M0
      - ถ้า reject → กลับ Phase A ปรับ direction
 
-  7. WHEN milestone M0/M1/M2/M3 complete → OPEN PR (see below)
+  7. WHEN milestone M0/M1/M2/M3 complete:
+     - UPDATE PROGRESS.md → current milestone: [Mx] done, next: [Mx+1]
+       git add PROGRESS.md && git commit -m "progress: [Mx] complete"
+     - OPEN PR (see below)
+
+  8. BEFORE ending any session (even mid-milestone):
+     - UPDATE PROGRESS.md → Next Action: [อธิบาย 1 ประโยค]
+       git add PROGRESS.md && git commit -m "progress: checkpoint [timestamp]"
 ```
 
 ---
