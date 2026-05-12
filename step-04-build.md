@@ -148,6 +148,140 @@ NEXT_PUBLIC_APP_URL=https://yourdomain.com
 
 ---
 
+## LOCAL DEVELOPMENT SETUP
+
+> ต้องรัน local ได้ก่อน deploy เสมอ — test บน local → Vercel preview → production
+
+### Prerequisites
+
+```bash
+# ติดตั้ง package manager
+npm install -g pnpm
+
+# ติดตั้ง Supabase CLI (สำหรับ M0+ เท่านั้น — ไม่ต้องมีใน V0)
+brew install supabase/tap/supabase
+
+# ติดตั้ง Stripe CLI (สำหรับ M2+ เท่านั้น)
+brew install stripe/stripe-cli/stripe
+```
+
+---
+
+### V0 Local Setup (2 นาที)
+
+> V0 ใช้ mock ทุกอย่าง — ไม่ต้องมี Supabase หรือ Stripe
+
+```bash
+# 1. Clone และ install
+git clone <repo-url> && cd <project>
+pnpm install
+
+# 2. สร้าง env (V0 ใช้แค่ OpenRouter)
+cp .env.example .env.development
+# แก้ไข OPENROUTER_API_KEY=sk-or-xxxx
+
+# 3. รัน dev server
+pnpm dev
+# เปิด http://localhost:3000
+```
+
+---
+
+### M0+ Local Setup (full stack)
+
+> เริ่มหลัง V0 ผ่าน human checkpoint แล้ว
+
+```bash
+# 1. เริ่ม Supabase local (Docker ต้องรันอยู่)
+supabase start
+# จะได้ค่า ANON_KEY และ SERVICE_ROLE_KEY — copy ใส่ .env.development
+
+# 2. รัน migrations
+supabase db push
+
+# 3. (optional) Seed ข้อมูลทดสอบ
+supabase db seed
+
+# 4. รัน dev server
+pnpm dev
+# เปิด http://localhost:3000
+
+# 5. (M2+) รัน Stripe webhook listener แยก terminal
+stripe login
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+# copy webhook secret → STRIPE_WEBHOOK_SECRET ใน .env.development
+```
+
+### ค่า env ที่ได้จาก `supabase start`
+
+```bash
+# copy ค่าพวกนี้ไปใส่ .env.development
+NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<ค่าจาก supabase start output>
+SUPABASE_SERVICE_ROLE_KEY=<ค่าจาก supabase start output>
+```
+
+---
+
+### Local Test Commands
+
+```bash
+# Unit + Integration tests
+pnpm test                        # รันครั้งเดียว
+pnpm test:watch                  # watch mode ระหว่าง dev
+
+# E2E tests (ต้องมี dev server รันอยู่)
+pnpm dev &                       # รัน dev server background
+pnpm test:e2e                    # รัน Playwright
+
+# ดู E2E results แบบ visual
+pnpm test:e2e --ui
+
+# Type check
+pnpm type-check
+
+# Lint
+pnpm lint
+```
+
+### `package.json` scripts ที่ต้องมี
+
+```json
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --ext .ts,.tsx",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:push": "supabase db push",
+    "db:seed": "supabase db seed",
+    "db:types": "supabase gen types typescript --local > src/types/database.ts"
+  }
+}
+```
+
+---
+
+### Local Dev Checklist (ก่อน push ทุกครั้ง)
+
+```bash
+pnpm lint && pnpm type-check && pnpm test
+```
+
+- [ ] `pnpm dev` รันได้ ไม่มี error ใน console
+- [ ] feature ที่ implement ทำงานได้บน local ก่อน push
+- [ ] `pnpm test` ผ่านทุกอัน
+- [ ] ไม่มี `.env.development` values ติดมาใน commit (`git grep` หา secret)
+
+---
+
 ## PHASE A: WRITE PLAN TO GITHUB ISSUES
 
 > **REQUIRED SKILL:** ใช้ `superpowers:writing-plans` ในขั้นตอนนี้
@@ -878,6 +1012,8 @@ my-product/
 - ต่อยอดจาก V0 scaffold — เพิ่ม ESLint, Prettier, Husky, lint-staged
 - Install Supabase, Stripe, Vitest, Playwright, Testing Library, msw
 - สร้าง .env.example และ .env.development ครบถ้วน
+- เพิ่ม scripts ทุกตัวใน package.json (dev, test, test:e2e, lint, type-check, db:*)
+- ยืนยัน `pnpm dev` รันได้บน local ก่อน merge
 - Setup Vercel project + connect GitHub อย่างเป็นทางการ
 
 #5 Database Schema & Migrations
