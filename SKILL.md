@@ -79,7 +79,9 @@ Step 04: Build MVP             ──→  Working code + PRs       (2–4 สั
 
 คุณต้องตรวจและ approve ก่อนเสมอที่ขั้นตอนเหล่านี้:
 
+- **หลัง Step 00:** Direction ชัด? IS/IS NOT ของ MVP ตกลงแล้ว?
 - **หลัง Step 01:** Problem Statement สมเหตุสมผล? Market signal แข็งพอ?
 - **หลัง Step 02:** P0 features ≤ 5? Riskiest assumption ระบุชัด?
 - **หลัง Step 03:** Design brief พร้อม dev ทำงานได้ทันที?
 - **Phase A ของ Step 04:** Plan ผ่าน Plan Reviewer ก่อน execute
+- **หลัง V0 (Step 04):** ดู demo — "นี่คือ product ที่ต้องการไหม?" → approve ก่อน M0

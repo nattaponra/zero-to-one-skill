@@ -17,6 +17,40 @@ Phase A: PLAN  — อ่าน design brief → แตก GitHub Issues → rev
 Phase B: BUILD — execute issues ทีละอัน → update status → open PR → agent review
 ```
 
+### Value-First Build Order
+
+> **หลักการ:** พิสูจน์ value ก่อนลงทุนกับ infrastructure
+> ห้ามให้ user รอ 1–2 สัปดาห์โดยไม่ได้เห็น product ทำงานจริง
+
+```
+V0: Value Core    ← BUILD นี้ก่อน — ใช้ mock auth + mock data
+   │ 👤 Human Checkpoint: "นี่คือ product ที่ต้องการไหม?"
+   ▼
+M0: Foundation    ← เฉพาะหลัง V0 ผ่านแล้ว — real auth, real DB, CI/CD
+   ▼
+M1: Core Features ← build V0 features ใหม่บน real infrastructure
+   ▼
+M2: Payments      ← Stripe + subscription gate
+   ▼
+M3: Polish & Launch
+```
+
+**V0 คืออะไร:**
+- Core feature ทำงานได้จริง (real UI + real AI/logic)
+- Mock auth — hardcoded user session ไม่ต้องสมัครสมาชิก
+- Mock data — in-memory หรือ hardcoded ไม่ต้องมี DB จริง
+- Deploy ได้ทันทีบน Vercel เป็น demo URL
+- เป้าหมาย: **แสดงให้ user/stakeholder เห็นใน 2–3 วัน**
+
+**ห้ามทำสิ่งเหล่านี้ใน V0:**
+- Real authentication (Supabase Auth)
+- Database migrations และ RLS
+- Stripe / payments
+- CI/CD pipeline
+- Error handling ครบถ้วน
+
+**เริ่ม M0 ก็ต่อเมื่อ:** Human approve V0 แล้วเท่านั้น
+
 ---
 
 ## FIXED TECH STACK
@@ -160,19 +194,27 @@ Rules:
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` to execute this plan task-by-task.
 
 ## Milestone Overview
-| Milestone | Issues | เป้าหมาย | Sprint |
-|-----------|--------|---------|--------|
-| M0: Foundation | #1–#5 | repo setup, auth, DB schema | Sprint 1 |
-| M1: Core Features | #6–#15 | P0 features ทำงานได้ | Sprint 2–3 |
-| M2: Payments | #16–#18 | Stripe integration | Sprint 3 |
-| M3: Polish & Launch | #19–#25 | error handling, loading states, deploy | Sprint 4 |
+| Milestone | Issues | เป้าหมาย | Sprint | Gate |
+|-----------|--------|---------|--------|------|
+| **V0: Value Core** | #1–#3 | core feature ทำงานได้ด้วย mock — demo-able | Sprint 0 (2–3 วัน) | 👤 Human must approve ก่อน M0 |
+| M0: Foundation | #4–#9 | repo setup จริง, auth จริง, DB schema, CI/CD | Sprint 1 | — |
+| M1: Core Features | #10–#19 | P0 features บน real infrastructure | Sprint 2–3 | — |
+| M2: Payments | #20–#22 | Stripe integration + plan gating | Sprint 3 | — |
+| M3: Polish & Launch | #23–#28 | error handling, loading states, deploy | Sprint 4 | — |
 
 ## Dependency Graph
 ```
-#1 (setup) → #2 (DB schema) → #3 (auth) → #4 (core feature A)
-                                         → #5 (core feature B)
-#2 → #16 (stripe) → #17 (webhook) → #18 (subscription gate)
+V0 (#1–#3: mock core feature) ──→ 👤 Human Checkpoint
+                                         │
+                                         ▼
+#4 (setup) → #5 (DB schema) → #6 (auth) → #10 (core feature real)
+                                         → #11 (core feature B real)
+#5 → #20 (stripe) → #21 (webhook) → #22 (subscription gate)
 ```
+
+## Value Priority Rule
+> เมื่อมี 2 issues ที่ไม่มี blocker — เลือก issue ที่ user เห็น value ก่อนเสมอ
+> infrastructure issue ที่ไม่ block value delivery → ทำทีหลัง
 
 ## Risk Register
 | Risk | Issue | Mitigation |
@@ -403,7 +445,16 @@ WHILE issues remain in queue:
       - Add comment: error log + what was attempted
       - STOP and alert human
 
-  6. WHEN milestone complete → OPEN PR (see below)
+  6. WHEN V0 milestone complete:
+     - Deploy demo URL ไป Vercel preview
+     - 🛑 STOP — รอ Human Checkpoint ก่อน
+     - แจ้ง human: "V0 demo พร้อมแล้วที่ [URL] — core feature ทำงานได้
+       ก่อนลงทุนกับ infrastructure (auth, DB, CI/CD) ขอ confirm ว่านี่คือ
+       product direction ที่ต้องการ?"
+     - รอ approve → ถึงจะเริ่ม M0
+     - ถ้า reject → กลับ Phase A ปรับ direction
+
+  7. WHEN milestone M0/M1/M2/M3 complete → OPEN PR (see below)
 ```
 
 ---
@@ -786,45 +837,76 @@ my-product/
 
 ---
 
-## FOUNDATION ISSUES (M0 — ทุก project ต้องมี)
+## VALUE CORE ISSUES (V0 — ทำก่อนทุกอย่าง)
+
+> เป้าหมาย: demo-able ใน 2–3 วัน — ใช้ mock ทุกอย่างที่ไม่ใช่ core value
+
+```markdown
+#1 Project Scaffold (minimal)
+- Init Next.js App Router + TypeScript (ไม่ต้องมี ESLint/Husky ใน V0)
+- Install MUI + OpenRouter SDK เท่านั้น
+- สร้าง mock session: `lib/mock-session.ts` — hardcoded user object
+  (ใช้แทน Supabase Auth ใน V0)
+- สร้าง mock DB: `lib/mock-db.ts` — in-memory data store
+  (ใช้แทน Supabase ใน V0)
+- Deploy ขึ้น Vercel ทันที (ไม่รอ CI/CD)
+
+#2 Core Value Feature — UI
+- สร้าง screen หลักที่ deliver value จาก design brief
+- ใช้ mock session + mock data
+- ต้องทำงานได้จริง — ไม่ใช่ placeholder หรือ static mockup
+- path: /app/[core-feature]
+
+#3 Core Value Feature — Logic / AI
+- implement business logic / AI call จริงด้วย OpenRouter
+- ต่อเข้ากับ UI จาก #2
+- ผล: user สามารถทำ [core job-to-be-done] ได้ครบจบในหน้าเดียว
+
+---
+🛑 HUMAN CHECKPOINT — deploy V0 demo → รอ approve ก่อนทำ #4 เป็นต้นไป
+---
+```
+
+---
+
+## FOUNDATION ISSUES (M0 — เริ่มหลัง V0 ผ่าน human checkpoint แล้ว)
 
 > AI จะ generate issues เพิ่มเติมจาก design brief แต่ M0 นี้คือ baseline ทุก project
 
 ```markdown
-#1 Project Setup
-- Init Next.js 16+ App Router + TypeScript strict
-- Install MUI, Supabase, OpenRouter, Stripe
-- Install Vitest, Playwright, Testing Library, msw
-- Setup ESLint + Prettier + Husky
-- Create .env.example และ .env.development
-- Setup Vercel project + connect GitHub
+#4 Project Setup (full)
+- ต่อยอดจาก V0 scaffold — เพิ่ม ESLint, Prettier, Husky, lint-staged
+- Install Supabase, Stripe, Vitest, Playwright, Testing Library, msw
+- สร้าง .env.example และ .env.development ครบถ้วน
+- Setup Vercel project + connect GitHub อย่างเป็นทางการ
 
-#2 Database Schema & Migrations
+#5 Database Schema & Migrations
 - Design Supabase tables จาก PRD
 - Write migration SQL
 - Enable RLS บนทุก table
 - Generate TypeScript types (supabase gen types)
 
-#3 Authentication
+#6 Authentication
 - Supabase Auth — email/password + magic link
-- Middleware: protect /dashboard routes
-- Auth UI pages: login, signup, forgot password
+- แทนที่ mock session จาก V0 ด้วย real auth
+- Middleware: protect /app routes
+- Auth UI pages: /login, /signup, forgot password
 - Session handling via @supabase/ssr
 
-#4 Theme & Design System
+#7 Theme & Design System
 - MUI ThemeProvider — colors จาก design brief
 - Typography: font family, sizes
 - Shared layout: header, sidebar/nav
 - Dark mode support (optional)
 
-#5 CI/CD + QA Pipeline
+#8 CI/CD + QA Pipeline
 - GitHub Actions: lint + type-check + vitest on every PR
 - GitHub Actions: playwright E2E on PR to main
 - QA Agent trigger: comment on PR เมื่อ checks pass
 - Vercel preview deployment per PR (QA ใช้ URL นี้ทดสอบ)
 - .env injection for preview (Vercel env vars)
 
-#6 Pricing & Plan Infrastructure
+#9 Pricing & Plan Infrastructure
 - สร้าง Stripe Products + Prices ตาม tier ใน Feature Matrix (Step 02 Section 7.3)
 - DB migration: table `user_plans` (user_id, plan, stripe_customer_id, stripe_subscription_id, current_period_end)
 - DB migration: table `usage_logs` (user_id, feature, count, period_start) + RLS
@@ -846,7 +928,9 @@ my-product/
 - [ ] ทุก issue มี acceptance criteria ≥ 3 ข้อ
 - [ ] **ทุก issue มี test cases ≥ 2 อัน (1 happy path + 1 sad path)**
 - [ ] ทุก test case มี steps ครบ (Given/When/Then) และ Expected Result
-- [ ] M0 issues (#1–#6) อยู่ใน queue ก่อนทุกอย่าง
+- [ ] V0 issues (#1–#3) อยู่ใน queue ก่อนทุกอย่าง และ deploy ได้ใน 2–3 วัน
+- [ ] V0 ไม่มี real auth / real DB / Stripe — ถ้ามีแสดงว่า scope ใหญ่เกินไป
+- [ ] M0 issues (#4–#9) อยู่ใน queue หลัง V0 เท่านั้น
 - [ ] Feature Matrix จาก Step 02 Section 7.3 ถูก implement ครบใน `user_plans` + server utilities
 - [ ] ทุก feature ที่ lock มี server-side guard — ไม่ใช่แค่ hide UI
 - [ ] `.env.example` มีทุก var ที่ใช้ใน codebase

@@ -74,17 +74,19 @@ flowchart TD
 
     subgraph S04B["⚙️ Step 04B · Build"]
         direction TB
-        B1["AI Subagent\nImplement issue ทีละอัน\nbranch: feat/issue-N-slug"]
-        B2["QA Agent\nรัน test cases\nGiven · When · Then"]
-        B3["Code Review Agent\nตรวจ security · types · spec compliance"]
-        B1 -->|"implement"| B2
-        B2 -->|"QA_FAILED"| B1
-        B2 -->|"QA_PASSED"| B3
-        B3 -->|"REQUEST_CHANGES"| B1
+        V0["🚀 V0: Value Core\n#1 scaffold · #2 UI · #3 logic/AI\nmock auth + mock data\ngoal: demo in 2–3 days"]
+        HV0{"👤 V0 Checkpoint\n\nดู demo URL\nนี่คือ product\nที่ต้องการไหม?"}
+        M0M3["M0→M3: Real Infrastructure\nauth · DB · payments · CI/CD\nfull feature build"]
+        QA["QA Agent + Code Review\nรัน test cases · ตรวจ code quality"]
+        V0 --> HV0
+        HV0 -->|"✅ ใช่เลย"| M0M3
+        HV0 -->|"🔄 ปรับ direction"| V0
+        M0M3 --> QA
+        QA -->|"QA_FAILED → systematic-debugging"| M0M3
     end
 
     S04B --> MERGE["Merge to main ✅"]
-    B3 -->|"APPROVE"| MERGE
+    QA -->|"QA_PASSED + APPROVE"| MERGE
 
     MERGE --> H5
 
@@ -113,7 +115,8 @@ flowchart TD
 | 1 | หลัง Discovery | Problem จริง? Market signal แข็ง? Competitor gap ชัด? | 30 นาที |
 | 2 | หลัง Define | P0 ≤ 5 features? Pricing tiers สมเหตุสมผล? Riskiest assumption ระบุชัด? | 45 นาที |
 | 3 | หลัง Design | ทุก P0 screen มี spec? v0/Bolt prompt ใช้ได้? Upgrade flow ครบ? | 1 ชั่วโมง |
-| 4 | หลัง Plan | ทุก issue มี test cases ≥ 2? M0 Foundation issues ครบ? ไม่มี circular dep? | 30 นาที |
+| 4 | หลัง Plan | ทุก issue มี test cases ≥ 2? V0 issues แค่ #1-#3? ไม่มี circular dep? | 30 นาที |
+| 4.5 | หลัง V0 demo | ดู demo URL — "นี่คือ product ที่ต้องการ?" → approve ก่อน M0 | 30 นาที |
 | 5 | หลัง Build | MVP ทำงานได้ตาม spec? Ready to ship? | ตามขนาด MVP |
 
 ---
