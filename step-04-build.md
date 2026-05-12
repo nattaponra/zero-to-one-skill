@@ -417,7 +417,7 @@ pnpm lint && pnpm type-check && pnpm test
 
 ## PHASE A: WRITE PLAN TO GITHUB ISSUES
 
-> **REQUIRED SKILL:** ใช้ `superpowers:writing-plans` ในขั้นตอนนี้
+> **REQUIRED SKILL:** ใช้ `superpowers:writing-plans` (ดู `skills/superpowers/writing-plans/SKILL.md`) ในขั้นตอนนี้
 > บันทึก plan ไปที่ `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`
 
 ### System Prompt (Phase A)
@@ -667,7 +667,7 @@ gh issue list --state open
 
 ## PHASE B: EXECUTE (Subagent-Driven Development)
 
-> **REQUIRED SKILL:** ใช้ `superpowers:subagent-driven-development` ในขั้นตอนนี้
+> **REQUIRED SKILL:** ใช้ `superpowers:subagent-driven-development` (ดู `skills/superpowers/subagent-driven-development/SKILL.md`) ในขั้นตอนนี้
 > Fresh subagent ต่อ 1 issue + two-stage review (spec compliance → code quality) ทุกอัน
 
 ### GitHub Issue Management — `gh` CLI Commands
@@ -844,7 +844,7 @@ WHILE issues remain in queue:
   5b. If SUCCESS + QA_FAILED → RUN:
       gh issue edit <N> --add-label "qa-failed"
       gh issue comment <N> --body "❌ QA Failed\n[รายละเอียด test ที่ fail]"
-      (Subagent ใช้ superpowers:systematic-debugging → แก้ → loop กลับ step 4)
+      (Subagent ใช้ superpowers:systematic-debugging — ดู skills/superpowers/systematic-debugging/SKILL.md → แก้ → loop กลับ step 4)
       หลัง 2 รอบยังไม่ผ่าน → ทำ step 5c
 
   5c. If BLOCKED → RUN:
@@ -892,7 +892,10 @@ Do not add features not in the spec. Do not change the tech stack.
   Avoid generic AI aesthetics: no Inter/Roboto, no purple gradients, no cookie-cutter layouts.
 
 - **ก่อน report SUCCESS ทุกครั้ง:** ใช้ `superpowers:verification-before-completion`
-- **ถ้า QA_FAILED:** ใช้ `superpowers:systematic-debugging` — หา root cause ก่อน ห้าม patch
+  (ดู `skills/superpowers/verification-before-completion/SKILL.md`)
+  รัน verification commands จริง อ่าน output จริง — ห้ามอ้างว่า done โดยไม่มี evidence
+- **ถ้า QA_FAILED:** ใช้ `superpowers:systematic-debugging`
+  (ดู `skills/superpowers/systematic-debugging/SKILL.md`) — หา root cause ก่อน ห้าม patch
 
 ## Tech Stack Constraints
 - Next.js App Router — use server components by default, client only when needed
@@ -938,7 +941,7 @@ done          → เสร็จ ผ่าน QA และ criteria ทุก�
 
 ## PR WORKFLOW
 
-> **REQUIRED SKILL:** เมื่อ milestone complete ให้ใช้ `superpowers:finishing-a-development-branch`
+> **REQUIRED SKILL:** เมื่อ milestone complete ให้ใช้ `superpowers:finishing-a-development-branch` (ดู `skills/superpowers/finishing-a-development-branch/SKILL.md`)
 > (verify tests → detect environment → present merge/PR/keep/discard options → execute)
 
 ### เมื่อไหรจะเปิด PR
