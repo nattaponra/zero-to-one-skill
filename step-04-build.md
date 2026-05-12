@@ -162,7 +162,166 @@ NEXT_PUBLIC_APP_URL=https://yourdomain.com
 
 > ไม่ต้องใช้ Docker — รัน local + test บน Supabase cloud + Vercel preview
 
-### Prerequisites (ติดครั้งเดียว)
+---
+
+### FIRST-TIME SETUP GUIDE
+
+> ทำครั้งเดียวตอนเริ่ม project — AI จะ guide user ผ่านทุก step นี้
+
+#### บัญชีที่ต้องมีก่อนเริ่ม
+
+| Service | ใช้ทำอะไร | สมัครที่ | ค่าใช้จ่าย |
+|---------|----------|---------|-----------|
+| GitHub | source code + CI | github.com | ฟรี |
+| Vercel | deploy + preview | vercel.com | ฟรี (Hobby) |
+| Supabase | database + auth + storage | supabase.com | ฟรี (2 projects) |
+| OpenRouter | LLM API | openrouter.ai | จ่ายตามใช้ |
+| Stripe | payment | stripe.com | ฟรี (test mode ไม่จำกัด) |
+
+---
+
+#### Step 1 — GitHub Repository
+
+```
+1. ไปที่ github.com → New repository
+2. ตั้งชื่อ repo → Create
+3. copy repo URL ไว้ใช้ใน Step 3
+```
+
+---
+
+#### Step 2 — Supabase (สร้าง 2 projects)
+
+> สร้างแยก dev/prod ตั้งแต่ต้น — ป้องกันข้อมูลทดสอบปน production
+
+```
+DEV PROJECT:
+1. ไปที่ supabase.com → New project
+2. ตั้งชื่อ: <app-name>-dev
+3. เลือก region: Southeast Asia (Singapore)
+4. ตั้ง database password → บันทึกไว้ (ใช้อีกครั้ง)
+5. รอ project สร้างเสร็จ (~2 นาที)
+6. ไปที่ Settings → API → copy ค่าต่อไปนี้:
+   - Project URL       → NEXT_PUBLIC_SUPABASE_URL (dev)
+   - anon public key   → NEXT_PUBLIC_SUPABASE_ANON_KEY (dev)
+   - service_role key  → SUPABASE_SERVICE_ROLE_KEY (dev)  ⚠️ เก็บเป็นความลับ
+
+PROD PROJECT:
+7. ทำซ้ำ Step 1–6 → ตั้งชื่อ: <app-name>-prod
+8. บันทึก keys แยกไว้ชัดเจนว่าเป็น prod
+```
+
+---
+
+#### Step 3 — Vercel
+
+```
+1. ไปที่ vercel.com → Add New Project
+2. Import GitHub repo จาก Step 1
+3. Framework: Next.js (detect อัตโนมัติ)
+4. ยังไม่ต้องกรอก env vars → Deploy ไปก่อน (จะ fail ได้ — ไม่เป็นไร)
+5. ไปที่ Project Settings → Environment Variables
+   เพิ่ม env vars แยกตาม environment:
+
+   ┌─────────────────────────────────────────────────────┐
+   │ Variable                        │ Preview │ Production│
+   ├─────────────────────────────────┼─────────┼───────────┤
+   │ NEXT_PUBLIC_SUPABASE_URL        │ dev URL │ prod URL  │
+   │ NEXT_PUBLIC_SUPABASE_ANON_KEY   │ dev key │ prod key  │
+   │ SUPABASE_SERVICE_ROLE_KEY       │ dev key │ prod key  │
+   │ OPENROUTER_API_KEY              │ (ดู Step 4) │ same │
+   │ OPENROUTER_BASE_URL             │ https://openrouter.ai/api/v1 │ same │
+   │ OPENROUTER_DEFAULT_MODEL        │ anthropic/claude-3-haiku │ claude-3-5-sonnet │
+   │ NEXT_PUBLIC_APP_URL             │ (ว่างไว้ — Vercel inject อัตโนมัติ) │ your domain │
+   └─────────────────────────────────────────────────────┘
+```
+
+---
+
+#### Step 4 — Vercel + Supabase Integration (sync env vars อัตโนมัติ)
+
+> ทางเลือก: แทนที่ Step 3 กรอก env vars เอง ทำ integration แล้ว Vercel จะ sync ให้อัตโนมัติ
+
+```
+1. ไปที่ vercel.com/integrations/supabase → Add Integration
+2. เลือก Vercel project ที่สร้างใน Step 3
+3. เลือก Supabase dev project → Connect
+4. Vercel จะ inject SUPABASE_URL, ANON_KEY, SERVICE_ROLE_KEY ให้อัตโนมัติ
+5. ทำซ้ำสำหรับ prod project → เลือก environment = Production
+```
+
+---
+
+#### Step 5 — OpenRouter
+
+```
+1. ไปที่ openrouter.ai → Sign in → Keys → Create Key
+2. ตั้งชื่อ: <app-name>-dev
+3. copy API key → ใส่ใน Vercel env vars และ .env.development
+   OPENROUTER_API_KEY=sk-or-xxxx
+```
+
+---
+
+#### Step 6 — Stripe (M2+ เท่านั้น — ข้ามได้ใน V0 และ M0)
+
+```
+1. ไปที่ stripe.com → สร้าง account (หรือ login)
+2. ตรวจสอบว่าอยู่ใน Test mode (toggle มุมบนขวา)
+3. Developers → API keys → copy:
+   - Publishable key → NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+   - Secret key      → STRIPE_SECRET_KEY
+4. เพิ่มใน Vercel env vars (ทั้ง Preview และ Production ใช้ test keys เหมือนกันไปก่อน)
+5. Webhook (ตั้งทีหลังเมื่อ deploy แล้ว):
+   Developers → Webhooks → Add endpoint
+   → URL: https://<vercel-preview-url>/api/stripe/webhook
+   → Events: checkout.session.completed, customer.subscription.updated,
+             customer.subscription.deleted
+   → copy Signing secret → STRIPE_WEBHOOK_SECRET
+```
+
+---
+
+#### Step 7 — Local Setup
+
+```bash
+# 1. Clone repo
+git clone <github-repo-url> && cd <project>
+pnpm install
+
+# 2. สร้าง env file
+cp .env.example .env.development
+
+# 3. กรอกค่าจาก Step 2–6
+#    NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co  (dev project)
+#    NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+#    SUPABASE_SERVICE_ROLE_KEY=...
+#    OPENROUTER_API_KEY=sk-or-xxxx
+#    STRIPE_SECRET_KEY=sk_test_xxxx          (ถ้าถึง M2)
+#    STRIPE_WEBHOOK_SECRET=whsec_xxxx        (ถ้าถึง M2)
+#    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxxx
+
+# 4. Link Supabase CLI กับ dev project
+supabase login
+supabase link --project-ref <project-ref>
+# project-ref = ส่วนของ URL: https://supabase.com/dashboard/project/<project-ref>
+
+# 5. รัน
+pnpm dev   # → http://localhost:3000
+```
+
+---
+
+#### Checklist — Setup สำเร็จเมื่อ
+
+- [ ] `pnpm dev` รันได้ ไม่มี error
+- [ ] เปิด http://localhost:3000 เห็นหน้า Landing Page
+- [ ] Vercel preview URL ทำงานได้หลัง push branch
+- [ ] Supabase dashboard เห็น connection จาก app (Auth → Users หรือ Database → logs)
+
+---
+
+### Prerequisites (ติดครั้งเดียวบนเครื่อง dev)
 
 ```bash
 npm install -g pnpm
